@@ -1,0 +1,184 @@
+<html>
+<head>
+  <title>Students</title>
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css" />
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.17.0/jquery.validate.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/1.3.1/js/toastr.js"></script>
+  <script src="assets/js/jquery.spapp.js"></script>
+  <script src="js/utils.js"></script>
+
+  <style>
+  .error{
+    color: red;
+  }
+  </style>
+</head>
+<body style="display:none">
+
+  <div id="fb-root"></div>
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/bs_BA/sdk.js#xfbml=1&version=v7.0&appId=3053978557956776&autoLogAppEvents=1"></script>
+
+<div style="margin-top:10%; margin-left: 2%; margin-right:2%">
+      <form id="login_form" >
+        <div class="form-group">
+        <div>
+          <label for="user_email">Email:</label>
+          <input type="email" id="user_email" name="user_email" class="form-control"></input>
+        </div>
+        <div>
+          <label for="psword">Password:</label>
+          <input type="password" id="psword" name="psword" class="form-control"></input>
+        </div>
+
+        <button type="button" class="btn btn-default" id="close_button" data-dismiss="modal">Close</button>
+        <button type="submit" class="btn btn-success">Login</button>
+
+        <!--  <div id="messageBox1"><ul></ul></div>-->
+      </form>
+  </div>
+  <div id="status"></div>
+
+  <div class="fb-login-button" data-size="large" data-button-type="continue_with" data-layout="default" data-auto-logout-link="false" data-use-continue-as="false" data-width=""></div>
+</body>
+
+<script>
+
+  function statusChangeCallback(response) {  // Called with the results from FB.getLoginStatus().
+    console.log('statusChangeCallback');
+    console.log(response);                   // The current login status of the person.
+    if (response.status === 'connected') {   // Logged into your webpage and Facebook.
+      testAPI();
+    } else {                                 // Not logged into your webpage or we are unable to tell.
+      document.getElementById('status').innerHTML = 'Please log ' +
+        'into this webpage.';
+    }
+  }
+
+
+  function checkLoginState() {               // Called when a person is finished with the Login Button.
+    FB.getLoginStatus(function(response) {   // See the onlogin handler
+      statusChangeCallback(response);
+    });
+  }
+
+
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '3053978557956776',
+      cookie     : true,                     // Enable cookies to allow the server to access the session.
+      xfbml      : true,                     // Parse social plugins on this webpage.
+      version    : 'v7.0'           // Use this Graph API version for this call.
+    });
+
+
+    FB.getLoginStatus(function(response) {   // Called after the JS SDK has been initialized.
+      statusChangeCallback(response);        // Returns the login status.
+    });
+  };
+
+
+  (function(d, s, id) {                      // Load the SDK asynchronously
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = "https://connect.facebook.net/en_US/sdk.js";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+
+
+  function testAPI() {                      // Testing Graph API after login.  See statusChangeCallback() for when this call is made.
+    console.log('Welcome!  Fetching your information.... ');
+    FB.api('/me', function(response) { console.log(response);
+      console.log('Successful login for: ' + response.name);
+      document.getElementById('status').innerHTML =
+        'Thanks for logging in, ' + response.name + '!';
+    });
+  }
+
+</script>
+
+<script type="text/javascript">
+  var user = window.localStorage.getItem("user_token");
+
+/*  function parseJwt (token) {
+    var base64Url = token.split('.')[1];
+    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+  };*/
+
+  user = Utils.parseJwt(user);
+  if (user){
+    if (user.email){
+      window.location = "index.html";
+    }else{
+      $('body').show();
+    }
+  }else{
+    $('body').show();
+  }
+
+jQuery.validator.addMethod("user_email", function(value, element){
+  return this.optional( element ) || /[a-z]+@[a-z]+\.[a-z]+/.test( value );
+}, 'Invalid email address');
+
+
+$("#login_form").validate({
+ focusCleanup: true,
+ errorElement: "em",
+rules: {
+  user_email: {
+    required: true,
+  },
+  psword: {
+    required: true,
+    minlength: 2,
+    maxlength: 10
+  }
+},
+messages: {
+  user_email: 'Enter a valid email',
+  psword: {
+    minlength: 'Password must be at least 8 characters long'
+  }
+},
+highlight: function(element, errorClass) {
+  $(element).fadeOut(function() {
+    $(element).fadeIn();
+  });
+},
+errorContainer: "#messageBox1, #messageBox2",
+errorLabelContainer: "#messageBox1 ul",
+wrapper: "li",
+submitHandler: function(form, validator) {
+  $.post('rest/login', $("#login_form").serialize()).done(function(data){
+    toastr.success('Success');
+    window.localStorage.setItem("user_token", data.user_token);
+    window.location = "index.html";
+  }).fail(function(){
+     toastr.error('Error');
+  });
+
+},
+invalidHandler: function(event, validator) {
+  var errors = validator.numberOfInvalids();
+  toastr.error("Error");
+  if (errors) {
+    var message = errors == 1
+      ? 'You missed 1 field.'
+      : 'You missed ' + errors + ' fields.';
+    $("div.error span").html(message);
+    $("div.error").show();
+  } else {
+    $("div.error").hide();
+  }
+ }
+});
+
+</script>
